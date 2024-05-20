@@ -15,9 +15,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import Link from "next/link";
-import {signIn} from "next-auth/react";
-import {useRouter} from "next/navigation";
+import {useSession} from "next-auth/react";
+import {reloadSession} from "@/lib/funcs";
 
 const formSchema = z
   .object({
@@ -26,35 +25,47 @@ const formSchema = z
       .min(1, { message: "This field has to be filled." })
       .email("This is not a valid e-mail")
       .max(100, { message: "E-mail can't be longer than 300 characters." }),
-    password: z
-      .string()
-      .min(6, { message: "Password has to be at least 6 characters long." }),
-  });
+  })
 
-export function LoginForm() {
-  const router = useRouter();
+export function DashboardForm({ email}: {email: string}) {
+  const { data: session, update } = useSession()
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: { email },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const response = await signIn("credentials",  {
-      email: values.email,
-      password: values.password,
-      redirect: false
+    const response = await fetch(`/api/updateEmail`, {
+      method: "POST",
+      body: JSON.stringify(values),
     });
 
-    if (!response?.error) {
-      await router.push('/dashboard')
+    const data = await response.json();
+
+    if (data.error) {
+      toast.error(data.error);
+      return;
     }
 
-    toast.success("Account created!");
+
+    await update({
+      ...session,
+      user: {
+        ...session?.user,
+        email: values.email
+      }
+    })
+
+    reloadSession();
+
+    toast.success("E-mail changed");
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <h1 className="text-2xl">Modify your email</h1>
         <FormField
           control={form.control}
           name="email"
@@ -71,23 +82,6 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
-              <FormDescription>
-                This is your password used to sign in to our app.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Link href="/register" className="block">Dont have an account?</Link>
         <Button type="submit">Submit</Button>
       </form>
     </Form>

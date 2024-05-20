@@ -41,7 +41,7 @@ const formSchema = z
     }
   });
 
-export function ProfileForm() {
+export function RegistrationForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {},
@@ -67,6 +67,7 @@ export function ProfileForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <h1 className="text-2xl">Registration</h1>
         <FormField
           control={form.control}
           name="email"
@@ -115,7 +116,7 @@ export function ProfileForm() {
             </FormItem>
           )}
         />
-        <Link href="/login" className="block">Already have an accout?</Link>
+        <Link href="/login" className="block">Already have an account?</Link>
         <Button type="submit">Submit</Button>
       </form>
     </Form>
